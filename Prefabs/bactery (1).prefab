@@ -131,5 +131,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 288bf5647a904e54191e2db59b896b03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  normalColor: {r: 0.11372549, g: 0.27058825, b: 0.12156863, a: 1}
+  stickedColor: {r: 0.027897932, g: 0.31617647, b: 0.31617647, a: 1}
+  spawnColor: {r: 0.2559565, g: 0.609, b: 0.27360865, a: 1}
   divisionFrequency: 0.01
   bacteryState: 0
