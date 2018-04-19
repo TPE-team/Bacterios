@@ -5,6 +5,7 @@ using UnityEngine;
 public class Bactery2D : MonoBehaviour {
 	public float divisionFrequency = 0.1f;
 	public BacteryState bacteryState = BacteryState.normal;
+	float zVelocity = 0f;
 
 	public GameObject Divide(Transform colony, GameObject animation) {
 		GameObject newBactery = GameObject.Instantiate (gameObject, colony);
@@ -34,12 +35,14 @@ public class Bactery2D : MonoBehaviour {
 	}
 
 	public void StickToWall() {
-		bacteryState = BacteryState.sticking;
-		UIController ui = FindObjectOfType<UIController> ();
-		ui.UpdateBacteryCount ();
-		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 		RaycastHit hit;
+		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 		if (Physics.Raycast (ray, out hit, 10f, 1)) {
+			bacteryState = BacteryState.sticking;
+			gameObject.layer = 11;
+			UIController ui = FindObjectOfType<UIController> ();
+			ui.UpdateBacteryCount ();
+			Debug.DrawRay (hit.point, hit.normal, Color.black);
 			StartCoroutine (SendTo (hit.point));
 		}
 
@@ -47,12 +50,19 @@ public class Bactery2D : MonoBehaviour {
 
 	public IEnumerator SendTo(Vector3 destination) {
 		Rigidbody2D rigidBody = GetComponent<Rigidbody2D> ();
-		while (Vector3.Distance (transform.position, destination) >= 0.1f) {
+		rigidBody.drag *= 2f;
+		while (Vector3.Distance (transform.position, destination) >= 0.05f) {
 			Vector3 direction = destination - transform.position;
 			rigidBody.AddForce (direction);
+			zVelocity += direction.z;
+			zVelocity /= 30f;
+			Vector3 newPos = transform.position + new Vector3 (0f, 0f, zVelocity);
+			transform.position = newPos;
 			yield return null;
 		}
+		rigidBody.bodyType = RigidbodyType2D.Static;
 		rigidBody.isKinematic = true;
+		//transform.position = destination;
 		bacteryState = BacteryState.sticked;
 	}
 	

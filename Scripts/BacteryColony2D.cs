@@ -33,11 +33,20 @@ public class BacteryColony2D : MonoBehaviour {
 		//bacteries [0].transform.Translate (0.1f, 0.1f, 0.1f);
 	}
 
+	void Update() {
+		if (Input.GetMouseButtonDown(0) && ActiveCount > 1) {
+			Bactery2D[] activeBacteries = GetActiveBacteries ();
+			Bactery2D bactery = activeBacteries [Random.Range (0, activeBacteries.Length)];
+			bactery.StickToWall ();
+		}
+	}
+
 	void FixedUpdate() {
 		//Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 		int outsideMask = 1 << 8;
 		int insideMask = 1;
 		Vector3 newBaryCenter = new Vector3 ();
+
 		for (int i = 0; i < bacteries.Count; i++) {
 			Bactery2D b = bacteries [i].GetComponent<Bactery2D> ();
 			if (b.bacteryState == BacteryState.normal) {
@@ -55,16 +64,11 @@ public class BacteryColony2D : MonoBehaviour {
 				Vector3 direction = mousePos - bacteries [i].transform.position;
 				Rigidbody2D bacteryRigidBody = bacteries [i].GetComponent<Rigidbody2D> ();
 				bacteryRigidBody.AddForce (direction);
+				if (ActiveCount < maxBacteryCount) {
+					Bactery2D bactery = bacteries [i].GetComponent<Bactery2D> ();
+					bactery.TestAndDivide (Random.Range (0f, 1f), this, bacterySpawnPrefab);
+				}
 			}
-			if (ActiveCount < maxBacteryCount) {
-				Bactery2D bactery = bacteries [i].GetComponent<Bactery2D> ();
-				bactery.TestAndDivide (Random.Range (0f, 1f), this, bacterySpawnPrefab);
-			}
-		}
-		if (Input.GetMouseButtonDown(0) && ActiveCount > 1) {
-			Bactery2D[] activeBacteries = GetActiveBacteries ();
-			Bactery2D bactery = activeBacteries [Random.Range (0, activeBacteries.Length)];
-			bactery.StickToWall ();
 		}
 		Transform baryCenter = GameObject.Find ("Barycenter").transform;
 		baryCenter.position = newBaryCenter / ActiveCount;
