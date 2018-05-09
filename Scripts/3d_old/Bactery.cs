@@ -35,7 +35,7 @@ public class Bactery : MonoBehaviour {
 	}
 
 	public void StickToWall() {
-		bacteryState = BacteryState.sticking;
+		bacteryState = BacteryState.moving;
 		UIController ui = FindObjectOfType<UIController> ();
 		ui.UpdateBacteryCount ();
 		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);

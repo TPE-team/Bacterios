@@ -34,8 +34,6 @@ public class BacteryColony : MonoBehaviour {
 
 	void FixedUpdate() {
 		//Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-		int outsideMask = 1 << 8;
-		int insideMask = 1;
 		Vector3 newBaryCenter = new Vector3 ();
 		for (int i = 0; i < bacteries.Count; i++) {
 			Bactery b = bacteries [i].GetComponent<Bactery> ();

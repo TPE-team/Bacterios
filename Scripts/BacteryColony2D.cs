@@ -5,9 +5,21 @@ using UnityEngine;
 public class BacteryColony2D : MonoBehaviour {
 	public GameObject bactery_prefab;
 	List<GameObject> bacteries;
+	List<BacteryProperties> bacteriesPropertiesList;
+	Transform baryCenter;
 	public int initialCount;
 	public int maxBacteryCount = 200;
 	public GameObject bacterySpawnPrefab;
+	public List<GameObject> Bacteries {
+		get {
+			return bacteries;
+		}
+	}
+	public Vector3 BaryCenter {
+		get {
+			return baryCenter.position;
+		}
+	}
 	public int Count {
 		get {
 			return bacteries.Count;
@@ -18,6 +30,7 @@ public class BacteryColony2D : MonoBehaviour {
 			return GetActiveBacteries ().Length;
 		}
 	}
+
 	public float distanceToCam = 1f;
 
 	public void Add(GameObject bactery) {
@@ -30,6 +43,7 @@ public class BacteryColony2D : MonoBehaviour {
 			GameObject bactery_object = GameObject.Instantiate (bactery_prefab, transform);
 			bacteries.Add (bactery_object);
 		}
+		baryCenter = GameObject.Find ("Barycenter").transform;
 		//bacteries [0].transform.Translate (0.1f, 0.1f, 0.1f);
 	}
 
@@ -43,13 +57,11 @@ public class BacteryColony2D : MonoBehaviour {
 
 	void FixedUpdate() {
 		//Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-		int outsideMask = 1 << 8;
-		int insideMask = 1;
 		Vector3 newBaryCenter = new Vector3 ();
 
 		for (int i = 0; i < bacteries.Count; i++) {
 			Bactery2D b = bacteries [i].GetComponent<Bactery2D> ();
-			if (b.bacteryState == BacteryState.normal) {
+			if (b.props.bacteryState == BacteryState.normal) {
 				newBaryCenter += bacteries [i].transform.position;
 				//RaycastHit insideHit;
 				//if (Physics.Raycast (ray, out insideHit, 10f, insideMask)) {
@@ -70,11 +82,10 @@ public class BacteryColony2D : MonoBehaviour {
 				}
 			}
 		}
-		Transform baryCenter = GameObject.Find ("Barycenter").transform;
 		baryCenter.position = newBaryCenter / ActiveCount;
-		Quaternion rotation = baryCenter.rotation;
-		rotation.y += Input.GetAxis ("Vertical");
-		baryCenter.rotation = rotation;
+		//Quaternion rotation = baryCenter.rotation;
+		//rotation.y += Input.GetAxis ("Vertical");
+		//baryCenter.rotation = rotation;
 		//int mask = 1 << 10;
 		//mask = ~mask;
 		//RaycastHit insideHitBary;
@@ -91,11 +102,11 @@ public class BacteryColony2D : MonoBehaviour {
 
 	}
 
-	Bactery2D[] GetActiveBacteries() {
+	public Bactery2D[] GetActiveBacteries() {
 		List<Bactery2D> activeBacteries = new List<Bactery2D> ();
 		for (int i = 0; i < bacteries.Count; i++) {
 			Bactery2D b = bacteries [i].GetComponent<Bactery2D> ();
-			if (b.bacteryState == BacteryState.normal) {
+			if (b.props.bacteryState == BacteryState.normal) {
 				activeBacteries.Add (b);
 			}
 		}
@@ -103,4 +114,19 @@ public class BacteryColony2D : MonoBehaviour {
 
 	}
 
+	public void Conjugate(int index, Vector3 targetPosition, BacteryProperties newBacteryProps) {
+		Bactery2D b = bacteries [index].GetComponent<Bactery2D> ();
+		b.StartConjugate (targetPosition, newBacteryProps);
+	}
+
+	public float GetAverageLengthExcept() {
+		float distanceSum = 0;
+		for (int i = 0; i < bacteries.Count; i++) {
+			Bactery2D b = bacteries [i].GetComponent<Bactery2D> ();
+			if (b.props.bacteryState == BacteryState.normal) {
+				distanceSum += Vector3.Distance (baryCenter.position, bacteries [i].transform.position);
+			}
+		}
+		return distanceSum / ActiveCount;
+	}
 }

@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Bactery2D : MonoBehaviour {
-	public Color normalColor;
-	public Color stickedColor;
 	public Color spawnColor;
-	public float divisionFrequency = 0.1f;
-	public BacteryState bacteryState = BacteryState.normal;
+	public BacteryProperties props;
 	float zVelocity = 0f;
 
 	private Renderer _renderer;
@@ -17,7 +14,7 @@ public class Bactery2D : MonoBehaviour {
 		_propBlock = new MaterialPropertyBlock ();
 		_renderer = GetComponent<Renderer> ();
 		float duration = 0.5f;
-		StartCoroutine (FadeFromToColor (spawnColor, normalColor, duration));
+		StartCoroutine (FadeFromToColor (spawnColor, props.colors[0], duration));
 	}
 
 	IEnumerator FadeToColor(Color color, float duration) {
@@ -67,31 +64,36 @@ public class Bactery2D : MonoBehaviour {
 
 	public void TestAndDivide(float number, BacteryColony2D colony, GameObject animation) {
 		Transform colonyTransform = colony.GetComponent<Transform> ();
-		if (number <= divisionFrequency / 60f) {
+		if (number <= props.divisionFrequency / 60f) {
 			GameObject newBactery = Divide (colonyTransform, animation);
+			Bactery2D newB = newBactery.GetComponent<Bactery2D> ();
+			newB.props = props;
+			newB.UpdateProps ();
 			colony.Add (newBactery);
-			UIController ui = FindObjectOfType<UIController> ();
-			ui.UpdateBacteryCount ();
+			UpdateBacteryCount ();
 		}
 	}
 
 	public void StickToWall() {
 		RaycastHit hit;
 		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-		if (Physics.Raycast (ray, out hit, 10f, 1)) {
-			bacteryState = BacteryState.sticking;
-			gameObject.layer = 11;
-			UIController ui = FindObjectOfType<UIController> ();
-			ui.UpdateBacteryCount ();
-			Debug.DrawRay (hit.point, hit.normal, Color.black);
-			StartCoroutine (SendTo (hit.point));
+		if (Physics.Raycast (ray, out hit, 10f, (1 << 8) | (1 << 12))) {
+			if (hit.collider.gameObject.layer == 8) {
+				props.bacteryState = BacteryState.moving;
+				gameObject.layer = 11;
+				UpdateBacteryCount ();
+				Debug.DrawRay (hit.point, hit.normal, Color.black);
+				StartCoroutine (SendTo (hit.point, BacteryState.sticked));
+			}
 		}
 
 	}
 
-	IEnumerator SendTo(Vector3 destination) {
+	IEnumerator SendTo(Vector3 destination, BacteryState targetState) {
 		Rigidbody2D rigidBody = GetComponent<Rigidbody2D> ();
 		rigidBody.drag *= 2f;
+		Color initial = props.colors [(int)targetState];
+		Color final = props.colors [(int)props.bacteryState];
 		float d1 = Vector3.Distance (transform.position, destination);
 		float t = 0f;
 		while ((Vector3.Distance (transform.position, destination) >= 0.05f) && t < 20f) {
@@ -103,15 +105,80 @@ public class Bactery2D : MonoBehaviour {
 			transform.position = newPos;
 			float d = Vector3.Distance (transform.position, destination);
 			_renderer.GetPropertyBlock (_propBlock);
-			_propBlock.SetColor ("_EmissionColor", Color.Lerp (stickedColor, normalColor, d / d1));
+			_propBlock.SetColor ("_EmissionColor", Color.Lerp (initial, final, d / d1));
 			_renderer.SetPropertyBlock (_propBlock);
 			t += Time.deltaTime;
 			yield return null;
 		}
 		rigidBody.bodyType = RigidbodyType2D.Static;
 		rigidBody.isKinematic = true;
-		//transform.position = destination;
-		bacteryState = BacteryState.sticked;
+		props.bacteryState = targetState;
 	}
-	
+
+	public void StartConjugate(Vector3 position, BacteryProperties targetProperties) {
+		gameObject.layer = 11;
+		props = targetProperties.Clone();
+		props.bacteryState = BacteryState.moving;
+		StartCoroutine (SendTo (position, targetProperties.bacteryState));
+		 // times 2 because in the case of a perfect circle, 
+		//the average distance to center is half of the radius (at least i think)
+		if (IsInvoking("ConjugateBack")) {
+			props.bacteryState = BacteryState.conjugating;
+		}
+		Invoke("ConjugateBack", 3f);
+	}
+
+	void ConjugateBack() {
+		BacteryColony2D bC = GetComponentInParent<BacteryColony2D> ();
+		float averageLength = bC.GetAverageLengthExcept ();
+		StartCoroutine (SendToDistance (averageLength * 2, BacteryState.normal));
+	}
+
+	public IEnumerator SendToDistance(float distance, BacteryState bacteryState) {
+		StopCoroutine ("SendTo");
+		Rigidbody2D rigidBody = GetComponent<Rigidbody2D> ();
+		rigidBody.bodyType = RigidbodyType2D.Dynamic;
+		rigidBody.isKinematic = false;
+		Color initial = props.colors [(int)bacteryState];
+		Color final = props.colors [(int)props.bacteryState];
+		zVelocity = 0f;
+		BacteryColony2D bC = GetComponentInParent<BacteryColony2D> ();
+		Vector3 destination = distance * Vector3.Normalize(bC.BaryCenter - transform.position) + bC.BaryCenter;
+		float d1 = Vector3.Distance (transform.position, destination);
+		float t = 0;
+		while (Vector3.Distance (bC.BaryCenter, transform.position) >= distance) {
+			t += Time.deltaTime;
+			destination = distance * Vector3.Normalize(bC.BaryCenter - transform.position) + bC.BaryCenter;
+			Vector3 direction = destination - transform.position;
+			rigidBody.AddForce (direction);
+			zVelocity += direction.z;
+			zVelocity /= 30f;
+			Vector3 newPos = transform.position + new Vector3 (0f, 0f, zVelocity);
+			transform.position = newPos;
+			float d = Vector3.Distance (transform.position, destination);
+			_renderer.GetPropertyBlock (_propBlock);
+			_propBlock.SetColor ("_EmissionColor", Color.Lerp (initial, final, d / d1));
+			_renderer.SetPropertyBlock (_propBlock);
+			t += Time.deltaTime;
+			yield return null;
+		}
+		rigidBody.drag /= 2f;
+		rigidBody.isKinematic = false;
+		gameObject.layer = 10;
+		props.bacteryState = bacteryState;
+		UpdateProps ();
+	}
+
+	void UpdateBacteryCount() {
+		UIController ui = FindObjectOfType<UIController> ();
+		ui.UpdateBacteryCount ();
+	}
+
+	public void UpdateProps() {
+		//setting color;
+		_renderer.GetPropertyBlock (_propBlock);
+		_propBlock.SetColor ("_EmissionColor", props.colors [(int)props.bacteryState]);
+		_renderer.SetPropertyBlock (_propBlock);
+	}
+
 }

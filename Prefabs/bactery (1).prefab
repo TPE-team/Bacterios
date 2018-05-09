@@ -100,7 +100,7 @@ Rigidbody2D:
   m_LinearDrag: 1
   m_AngularDrag: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 24a310f278c03be41ac871e08c0e7313, type: 2}
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
@@ -131,8 +131,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 288bf5647a904e54191e2db59b896b03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  normalColor: {r: 0.11372549, g: 0.27058825, b: 0.12156863, a: 1}
-  stickedColor: {r: 0.027897932, g: 0.31617647, b: 0.31617647, a: 1}
-  spawnColor: {r: 0.2559565, g: 0.609, b: 0.27360865, a: 1}
-  divisionFrequency: 0.01
-  bacteryState: 0
+  spawnColor: {r: 0.4202898, g: 1, b: 0.44927529, a: 1}
+  props:
+    divisionFrequency: 0.043
+    bacteryState: 0
+    colors:
+    - {r: 0.32941177, g: 0.7843138, b: 0.3529412, a: 1}
+    - {r: 0.02745098, g: 0.31764707, b: 0.31764707, a: 1}
+    - {r: 0.32941177, g: 0.7843138, b: 0.3529412, a: 1}
+    - {r: 0.32941177, g: 0.7843138, b: 0.3529412, a: 1}

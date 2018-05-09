@@ -3,5 +3,5 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public enum BacteryState {
-	normal, sticking, sticked	 
+	normal, sticked, conjugating, moving
 }
