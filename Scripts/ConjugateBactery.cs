@@ -17,9 +17,9 @@ public class ConjugateBactery : MonoBehaviour {
 	int FindClosestBacteryIndex(BacteryColony2D colony) {
 		float minDistance = float.MaxValue;
 		int index = -1;
-		for (int i = 0; i < colony.ActiveCount; i++) {
+		for (int i = 0; i < colony.Bacteries.Count; i++) {
 			Bactery2D b = colony.Bacteries [i].GetComponent<Bactery2D> ();
-			float d = Vector3.Distance (colony.GetActiveBacteries() [i].transform.position, transform.position);
+			float d = Vector3.Distance (colony.Bacteries [i].transform.position, transform.position);
 			if (d < minDistance && b.props.bacteryState == BacteryState.normal) {
 				minDistance = d;
 				index = i;

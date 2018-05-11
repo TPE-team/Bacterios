@@ -67,7 +67,7 @@ public class Bactery2D : MonoBehaviour {
 		if (number <= props.divisionFrequency / 60f) {
 			GameObject newBactery = Divide (colonyTransform, animation);
 			Bactery2D newB = newBactery.GetComponent<Bactery2D> ();
-			newB.props = props;
+			newB.props = props.Clone();
 			newB.UpdateProps ();
 			colony.Add (newBactery);
 			UpdateBacteryCount ();
@@ -83,17 +83,19 @@ public class Bactery2D : MonoBehaviour {
 				gameObject.layer = 11;
 				UpdateBacteryCount ();
 				Debug.DrawRay (hit.point, hit.normal, Color.black);
-				StartCoroutine (SendTo (hit.point, BacteryState.sticked));
+				BacteryProperties targetProperties = props.Clone ();
+				targetProperties.bacteryState = BacteryState.sticked;
+				StartCoroutine (SendTo (hit.point, targetProperties));
 			}
 		}
 
 	}
 
-	IEnumerator SendTo(Vector3 destination, BacteryState targetState) {
+	IEnumerator SendTo(Vector3 destination, BacteryProperties targetProps) {
 		Rigidbody2D rigidBody = GetComponent<Rigidbody2D> ();
 		rigidBody.drag *= 2f;
-		Color initial = props.colors [(int)targetState];
-		Color final = props.colors [(int)props.bacteryState];
+		Color final = props.colors [(int)targetProps.bacteryState];
+		Color initial = props.colors [(int)props.bacteryState];
 		float d1 = Vector3.Distance (transform.position, destination);
 		float t = 0f;
 		while ((Vector3.Distance (transform.position, destination) >= 0.05f) && t < 20f) {
@@ -105,32 +107,30 @@ public class Bactery2D : MonoBehaviour {
 			transform.position = newPos;
 			float d = Vector3.Distance (transform.position, destination);
 			_renderer.GetPropertyBlock (_propBlock);
-			_propBlock.SetColor ("_EmissionColor", Color.Lerp (initial, final, d / d1));
+			_propBlock.SetColor ("_EmissionColor", Color.Lerp (final, initial, d / d1));
 			_renderer.SetPropertyBlock (_propBlock);
 			t += Time.deltaTime;
 			yield return null;
 		}
 		rigidBody.bodyType = RigidbodyType2D.Static;
 		rigidBody.isKinematic = true;
-		props.bacteryState = targetState;
+		props = targetProps.Clone();
 	}
 
 	public void StartConjugate(Vector3 position, BacteryProperties targetProperties) {
 		gameObject.layer = 11;
-		props = targetProperties.Clone();
+		BacteryProperties newProps = targetProperties.Clone();
 		props.bacteryState = BacteryState.moving;
-		StartCoroutine (SendTo (position, targetProperties.bacteryState));
-		 // times 2 because in the case of a perfect circle, 
-		//the average distance to center is half of the radius (at least i think)
-		if (IsInvoking("ConjugateBack")) {
-			props.bacteryState = BacteryState.conjugating;
-		}
+		StartCoroutine (SendTo (position, targetProperties));
+		props.bacteryState = BacteryState.conjugating;
 		Invoke("ConjugateBack", 3f);
 	}
 
 	void ConjugateBack() {
 		BacteryColony2D bC = GetComponentInParent<BacteryColony2D> ();
 		float averageLength = bC.GetAverageLengthExcept ();
+		// times 2 because in the case of a perfect circle, 
+		//the average distance to center is half of the radius (at least i think)
 		StartCoroutine (SendToDistance (averageLength * 2, BacteryState.normal));
 	}
 
